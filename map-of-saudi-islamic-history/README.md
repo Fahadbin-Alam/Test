@@ -203,3 +203,15 @@ The first run downloads about 135 small elevation tiles (a few MB) (cached in
 * Site coordinates: WGS84, mostly accurate to within a few hundred metres,
   which is under half a millimetre on the main map.
 * Projection: UTM zone 37N (EPSG:32637).
+
+## Interactive 3D viewer
+
+`viewer/index.html` is a 3D version of the whole map and both close-ups that
+runs in any browser. Tap any mountain, valley or marker to see how far it is
+from the Kaaba (km, miles, and cm/inches on the print), its height and
+position. It has a **Measure** mode for any two points, the same 50 km
+distance rings as the print, a **Sand** look, and a height slider. Open the
+file locally, or use the hosted copy.
+
+Renders of the printed result are in `preview/` (`printed-map-*.png`,
+`mecca-*.png`, `medina-*.png`).
