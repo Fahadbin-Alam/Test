@@ -1,0 +1,193 @@
+# Map of the Hijaz in the time of the Prophet ﷺ
+
+A 3D-printable relief map of western Saudi Arabia, from Ta'if and Mecca in the
+south to Khaybar in the north, built from real elevation data and printed in
+tiles that join into one map. It marks Mecca, Medina, Jabal al-Nour (Cave of
+Hira), and the main battles and events of the Prophet's life.
+
+![Main map preview](preview/main_map.png)
+
+| Mecca inset | Medina inset |
+|---|---|
+| ![Mecca](preview/inset_mecca.png) | ![Medina](preview/inset_medina.png) |
+
+## What you get
+
+| Piece | Size | Count | Colour |
+|---|---|---|---|
+| Main map tiles `stl/main_A1 … main_B3.stl` | 200 × 200 mm each, 400 × 600 mm assembled | 6 | Brown |
+| Mecca inset `stl/inset_mecca.stl` | 200 × 200 mm | 1 | Brown |
+| Medina inset `stl/inset_medina.stl` | 200 × 200 mm | 1 | Brown |
+| Legend plaque `stl/legend_plaque.stl` (title, key, scale bars) | 200 × 150 mm | 1 | Brown (or any) |
+| Joining keys `stl/joining_keys.stl` (bow-ties) | 30 × 14 mm | 14 + 2 spare | Brown |
+| Kaaba markers `stl/markers_black_kaaba.stl` | cube | 2 + 1 spare | **Black** |
+| Hira markers `stl/markers_white_light.stl` (peak cone for the main map + the summit cap for the Mecca inset) | | 1 + cap + 1 spare | **White** |
+| Prophet's Mosque markers `stl/markers_green_mosque.stl` | dome | 2 + 1 spare | **Green** |
+| Battle markers `stl/markers_red_battle.stl` | spire | 6 + 1 spare | **Red** |
+| Other events `stl/markers_gold_site.stl` | hexagon | 7 + 1 spare | **Gold / yellow** |
+
+Tile names: columns **A** (west, Red Sea side) and **B** (east); rows **1**
+(south, Mecca) to **3** (north, Khaybar). Each tile's name is engraved on its
+underside along with an arrow showing which edge is north.
+
+```
+ +----+----+
+ | A3 | B3 |   Khaybar
+ +----+----+
+ | A2 | B2 |   Badr, Medina
+ +----+----+
+ | A1 | B1 |   Red Sea, Mecca, Ta'if
+ +----+----+
+```
+
+## Scale: how to measure on the map
+
+**Main map: 1 cm = 10 km (1:1,000,000). 1 mm = 1 km, 1 inch = 25.4 km (about 15.8 miles).**
+
+Use a ruler in centimetres: read the distance and multiply by 10 to get
+kilometres. Examples, straight-line distances checked against the true
+distances on the globe:
+
+| From → to | On the map | Real distance |
+|---|---|---|
+| Mecca → Medina | 33.8 cm | 338 km |
+| Medina → Khaybar | 14.0 cm | 140 km |
+| Medina → Badr | 11.8 cm | 118 km |
+| Mecca → Ta'if | 6.3 cm | 63 km |
+| Mecca → Hudaybiyyah | 2.3 cm | 23 km |
+| Kaaba → Jabal al-Nour | 0.5 cm | 5.2 km |
+
+The map uses the UTM zone 37N grid, so the scale is true to within 0.05%
+everywhere on it; the error you'll see comes from the printer, not the map.
+"North" on the tiles is grid north, which is within 1° of true north here.
+A printed 100 km scale bar is raised on the Red Sea in tile A1, and both
+scale bars are on the legend plaque.
+
+**Insets: 1 cm = 1 km (1:100,000).** Mecca and Medina get their own tiles at
+ten times the detail, because at the main scale Uhud and the Trench sit within
+a few millimetres of the Prophet's Mosque. Each inset has a 5 km scale bar on
+its label strip. The Mecca inset covers 20 × 18.5 km (Haram to Arafat), and
+the Medina inset the same area around the city.
+
+**Heights are exaggerated** so the mountains read clearly:
+
+* main map: 1 mm of height = 100 m (10× exaggeration). Sea level is 4 mm above
+  the bottom of the tile; the sea itself sits 0.6 mm lower.
+* insets: 1 mm of height = 40 m (2.5× exaggeration), measured from a base
+  level of 200 m (Mecca) or 550 m (Medina), which is 4.6 mm above the bottom.
+
+## Colour plan
+
+Everything you print for the land is **brown**. Colour comes from the small
+markers that press onto pegs on the tiles, so it works on any single-colour
+printer with no filament changes.
+
+| Colour | Marker | Where |
+|---|---|---|
+| **Black** | Cube, turned so its corners face the compass points like the real Kaaba | Mecca (main map and inset) |
+| **White** | Cone on the main map; on the Mecca inset the **top 100 m of Jabal al-Nour itself** is a separate white cap, so the peak where the first revelation came glows white | Jabal al-Nour, Cave of Hira |
+| **Green** | Dome | Medina / the Prophet's Mosque |
+| **Red** | Spire | Badr, Uhud, the Trench, Khaybar, Hunayn, Ta'if |
+| **Gold** | Hexagon | Hudaybiyyah, Cave of Thawr, Quba, Qiblatayn, Mina, Muzdalifah, Arafat |
+
+Optional extras: paint the Red Sea blue (it is a flat, recessed surface with a
+crisp coastline, easy to mask), and run a red paint pen along the engraved
+groove of the Trench on the Medina inset.
+
+## Sites on the map
+
+| Marker | Place | Event |
+|---|---|---|
+| Black | Mecca, the Kaaba | Birth of the Prophet c. 570 CE; Conquest of Mecca, 8 AH / 630 CE |
+| White | Jabal al-Nour, Cave of Hira | First revelation, 610 CE |
+| Gold | Jabal Thawr *(inset)* | Cave of Thawr, start of the Hijra, 622 CE |
+| Green | Medina, the Prophet's Mosque | The Hijra, 1 AH / 622 CE |
+| Gold | Quba Mosque *(inset)* | First mosque, 1 AH / 622 CE |
+| Gold | Masjid al-Qiblatayn *(inset)* | Change of the qibla, 2 AH / 624 CE |
+| Red | Badr | Battle of Badr, 2 AH / 624 CE |
+| Red | Uhud *(inset, archers' hill)* | Battle of Uhud, 3 AH / 625 CE |
+| Red | The Trench *(inset, marker + engraved groove)* | Battle of the Trench, 5 AH / 627 CE |
+| Gold | Hudaybiyyah | Treaty of Hudaybiyyah, 6 AH / 628 CE |
+| Red | Khaybar | Battle of Khaybar, 7 AH / 628 CE |
+| Red | Hunayn | Battle of Hunayn, 8 AH / 630 CE |
+| Red | Ta'if | Siege of Ta'if, 8 AH / 630 CE |
+| Gold | Mina, Muzdalifah *(inset)* | Hajj sites |
+| Gold | Arafat, Jabal al-Rahmah *(inset)* | Farewell Sermon, 10 AH / 632 CE |
+
+Two locations are approximate and say so in `generator/sites.py`: the valley
+of Hunayn (its exact battlefield is debated) and the line of the Trench (drawn
+across the open north side of Medina between the two lava fields, near Jabal
+Sal'). Tabuk and Mu'tah are too far north to fit on this map.
+
+## Printing
+
+The tiles are 200 × 200 mm so they fit a 220 × 220 mm bed (Ender-3 / K1 /
+CR-10 SE class) with room for a skirt. If your bed is bigger, the same files
+still print fine.
+
+Suggested settings (PLA):
+
+* Layer height 0.2 mm (0.12–0.16 mm for the insets and markers if you want
+  smoother contours)
+* 3 walls, 3 top layers, 10–15% gyroid infill for the tiles
+* No supports needed for anything. Print every piece the way it is in the file
+  (flat side down).
+* Brim off for the tiles; a small brim helps the tiny markers stick.
+* Markers: 100% infill, slow (20–30 mm/s), 0.12 mm layers. Print one marker
+  file at a time in its colour.
+
+Rough material: the six main tiles are about 1 kg of brown at 15% infill;
+each inset about 150 g. Expect roughly 6–10 hours per tile at 0.2 mm,
+depending on the printer.
+
+The tallest piece is tile B1 at 28 mm (the mountains around Ta'if).
+
+## Assembly
+
+1. Lay the six main tiles face down, arranged as in the diagram above but
+   mirrored (A on the right when face down). The engraved names on the
+   underside read correctly from this side.
+2. Press a bow-tie key into each pair of matching pockets across every seam
+   (14 keys). They are a snug fit; add a drop of CA glue or wood glue in each
+   pocket if you want the map permanent. The keys pull the tiles tight and
+   line them up.
+3. Turn the map over. Push each marker onto its peg (match the colours to the
+   table above). A dot of glue makes them permanent.
+4. Mecca inset: put a drop of glue on the small nub on top of Jabal al-Nour
+   and press the white summit cap onto it.
+5. The insets and the legend plaque stand alone; display them beside the main
+   map, for example below tiles A1 and B1.
+
+If a key or a peg is too tight for your printer, change `KEY_CLEAR` or
+`SOCKET_R` in `generator/build.py` and re-run it.
+
+## Regenerating or changing the design
+
+Everything is generated by `generator/build.py` from real elevation data, so
+you can change the scale, bed size, exaggeration, tile layout or the list of
+sites and rebuild:
+
+```bash
+cd generator
+pip install -r requirements.txt
+python build.py
+```
+
+The first run downloads about 135 small elevation tiles (a few MB) (cached in
+`generator/.cache/`). Key settings at the top of `build.py`:
+
+* `TILE` – tile edge in mm (raise it for a bigger bed)
+* `MAIN_KM_PER_MM` – map scale (1.0 means 1 mm = 1 km)
+* `MAIN_M_PER_MM_Z`, `INSET_M_PER_MM_Z` – vertical exaggeration
+* `MAIN_E0`, `MAIN_N0`, `MAIN_COLS`, `MAIN_ROWS` – which area the map covers
+* Sites, dates and marker colours live in `generator/sites.py`.
+
+## Data and accuracy
+
+* Elevation: Terrarium terrain tiles from the AWS Open Data "Terrain Tiles"
+  set (Mapzen), which combine NASA SRTM, USGS GMTED2010 and ETOPO1. Main map
+  sampled at about 300 m, insets at about 20 m. Very sharp peaks come out a
+  few tens of metres lower than their true height.
+* Site coordinates: WGS84, mostly accurate to within a few hundred metres,
+  which is under half a millimetre on the main map.
+* Projection: UTM zone 37N (EPSG:32637).
