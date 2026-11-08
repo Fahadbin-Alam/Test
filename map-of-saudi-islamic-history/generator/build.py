@@ -55,6 +55,11 @@ PAD_R = 3.5                      # flattened pad around each marker
 KEY_DEPTH, KEY_THICK, KEY_CLEAR = 2.0, 1.8, 0.15
 EMBOSS = 0.8                     # raised text/scale-bar height
 ENGRAVE = 0.6                    # bottom tile-ID engraving depth
+CAP_DEPTH_M = 150.0              # Jabal al-Nour: top this many metres print white
+# Distance rings around the Kaaba on the main map, so you can touch any
+# mountain and read how far it is from Mecca. Set to [] to turn off.
+RING_KM = list(range(50, 601, 50))
+RING_W, RING_DEPTH = 1.0, 0.5    # groove width and depth, mm
 
 to_utm = Transformer.from_crs(4326, 32637, always_xy=True)
 to_geo = Transformer.from_crs(32637, 4326, always_xy=True)
@@ -255,6 +260,7 @@ def build_main():
             sub = h[r * per:(r + 1) * per + 1, c * per:(c + 1) * per + 1]
             ox, oy = c * TILE, r * TILE
             solid = heightfield_solid(sub, MAIN_STEP)
+            solid = add_rings(solid, pts[0], ox, oy, pts)
             adds, cuts = [], []
             for (px, py), z, s in zip(pts, pads, MAIN_SITES):
                 if ox <= px < ox + TILE and oy <= py < oy + TILE:
@@ -282,6 +288,57 @@ def build_main():
             tiles.append((name, solid))
             save_stl(solid, f"main_{name}.stl")
     return h, pts
+
+
+def _clear_spot(x, y, pts, r=9.0):
+    if min(abs(x % TILE), abs(TILE - x % TILE), abs(y % TILE), abs(TILE - y % TILE)) < 10:
+        return False
+    W, H = MAIN_COLS * TILE, MAIN_ROWS * TILE
+    if not (12 < x < W - 12 and 8 < y < H - 8):
+        return False
+    return all(math.hypot(x - px, y - py) > r for px, py in pts)
+
+
+def ring_labels(centre, pts):
+    """Pick a spot just inside each ring for its 'NN km' label."""
+    cx, cy = centre
+    out = []
+    for R in RING_KM:
+        for ang in [80, 100, 60, 120, 40, 140, 20, 160, 0, 180, -20, 200]:
+            a = math.radians(ang)
+            x, y = cx + (R - 4.0) * math.cos(a), cy + (R - 4.0) * math.sin(a)
+            if _clear_spot(x, y, pts):
+                out.append((R, x, y))
+                break
+    return out
+
+
+def add_rings(solid, centre, ox, oy, pts):
+    """Engrave distance rings and raise their labels, both following the terrain."""
+    if not RING_KM:
+        return solid
+    cx, cy = centre[0] - ox, centre[1] - oy
+    tile = CrossSection.square((TILE, TILE))
+    lowered = solid.translate((0, 0, -RING_DEPTH))
+    raised = solid.translate((0, 0, EMBOSS))
+    grooves, labels = [], []
+    for R in RING_KM:
+        seg = max(256, int(R * 6))
+        ann = (CrossSection.circle(R + RING_W / 2, seg) - CrossSection.circle(R - RING_W / 2, seg)).translate((cx, cy))
+        ann = ann ^ tile
+        if ann.area() > 0:
+            grooves.append(ann.extrude(200).translate((0, 0, 0.5)))
+    for R, x, y in ring_labels(centre, pts):
+        lx, ly = x - ox, y - oy
+        if -30 < lx < TILE + 30 and -10 < ly < TILE + 10:
+            cs = text_cs(f"{R} km", 4.5, lx, ly - 1.6, "center") ^ tile
+            if cs.area() > 0:
+                labels.append(cs.extrude(200).translate((0, 0, 0.5)))
+    if grooves:
+        solid = solid - (Manifold.batch_boolean(grooves, m3.OpType.Add) - lowered)
+    if labels:
+        solid = solid + (Manifold.batch_boolean(labels, m3.OpType.Add) ^ raised)
+    return solid
 
 
 def check_sea(h, sea_z, x0, y0, x1, y1, what):
@@ -344,7 +401,7 @@ def build_inset(cfg):
     E = (e0 + X * INSET_KM_PER_MM) * 1000
     N = (n0 + (Y - INSET_STRIP) * INSET_KM_PER_MM) * 1000
     lon, lat = to_geo.transform(E, N)
-    dem = DEM(lon.min() - .01, lat.min() - .01, lon.max() + .01, lat.max() + .01, 13, smooth_px=0.4)
+    dem = DEM(lon.min() - .01, lat.min() - .01, lon.max() + .01, lat.max() + .01, 13, smooth_px=5.0)
     elev = dem(lon, lat)
     inmap = Y >= INSET_STRIP
     datum = math.floor(elev[inmap].min() / 50.0) * 50.0
@@ -385,8 +442,8 @@ def build_inset(cfg):
         dj, di = np.unravel_index(np.argmax(win), win.shape)
         sj, si = j0 - r_px + dj, i0 - r_px + di
         sx, sy, sz = si * step, sj * step, float(h[sj, si])
-        cut_z = sz - 100.0 / INSET_M_PER_MM_Z     # top 100 m of the mountain
-        cap_r = 6.0
+        cut_z = sz - CAP_DEPTH_M / INSET_M_PER_MM_Z     # top of the mountain
+        cap_r = 8.0
         cap_info = (sx, sy, cut_z, cap_r, sz)
         pts.append((sx, sy))
 

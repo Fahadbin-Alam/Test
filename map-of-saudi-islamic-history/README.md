@@ -63,6 +63,13 @@ everywhere on it; the error you'll see comes from the printer, not the map.
 A printed 100 km scale bar is raised on the Red Sea in tile A1, and both
 scale bars are on the legend plaque.
 
+**Distance rings from the Kaaba.** Thin grooves circle Mecca every 50 km
+across the whole main map, each labelled ("100 km", "150 km" …) in raised
+text. Put your finger on any mountain, follow it to the nearest ring, and you
+can read how far it is from Mecca without a ruler. Medina sits just inside the
+350 km ring, Badr between 300 and 350, Khaybar near 500. Set `RING_KM = []` in
+`build.py` to print the map without them.
+
 **Insets: 1 cm = 1 km (1:100,000).** Mecca and Medina get their own tiles at
 ten times the detail, because at the main scale Uhud and the Trench sit within
 a few millimetres of the Prophet's Mosque. Each inset has a 5 km scale bar on
@@ -85,10 +92,14 @@ printer with no filament changes.
 | Colour | Marker | Where |
 |---|---|---|
 | **Black** | Cube, turned so its corners face the compass points like the real Kaaba | Mecca (main map and inset) |
-| **White** | Cone on the main map; on the Mecca inset the **top 100 m of Jabal al-Nour itself** is a separate white cap, so the peak where the first revelation came glows white | Jabal al-Nour, Cave of Hira |
+| **White** | Cone on the main map; on the Mecca inset the **top 150 m of Jabal al-Nour itself** is a separate white cap, so the peak where the first revelation came glows white | Jabal al-Nour, Cave of Hira |
 | **Green** | Dome | Medina / the Prophet's Mosque |
 | **Red** | Spire | Badr, Uhud, the Trench, Khaybar, Hunayn, Ta'if |
 | **Gold** | Hexagon | Hudaybiyyah, Cave of Thawr, Quba, Qiblatayn, Mina, Muzdalifah, Arafat |
+
+**Sand-sculpture look:** print every brown piece in a sand, tan or beige PLA
+instead and the map reads like a model shaped out of desert sand, with the
+coloured markers standing out even more. Nothing else changes.
 
 Optional extras: paint the Red Sea blue (it is a flat, recessed surface with a
 crisp coastline, easy to mask), and run a red paint pen along the engraved
