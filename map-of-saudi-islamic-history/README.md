@@ -67,7 +67,8 @@ scale bars are on the legend plaque.
 across the whole main map, each labelled ("100 km", "150 km" …) in raised
 text. Put your finger on any mountain, follow it to the nearest ring, and you
 can read how far it is from Mecca without a ruler. Medina sits just inside the
-350 km ring, Badr between 300 and 350, Khaybar near 500. Set `RING_KM = []` in
+350 km ring (338 km), Badr between the 250 and 300 rings (278 km), Khaybar
+just inside 500 (476 km). Set `RING_KM = []` in
 `build.py` to print the map without them.
 
 **Insets: 1 cm = 1 km (1:100,000).** Mecca and Medina get their own tiles at
