@@ -1,8 +1,10 @@
-# Omnitrix-style wrist prop (fan-made, classic style)
+# Omnitrix-style wrist prop (fan-made, chunky classic style)
 
 A wearable, fan-made prop inspired by the classic Ben 10 watch, modelled from
-scratch for personal use. The dial turns and clicks into 8 positions, and the
-body is hollow so a green LED can be added later.
+scratch for personal use. Chunky white body with four angled pylons and green
+light bars, a ridged dial that turns and clicks into 8 positions, and an
+armoured black band with a green stripe. The body is hollow so a green LED can
+be added later.
 
 ![assembled](images/assembled.png)
 ![exploded](images/exploded.png)
@@ -12,13 +14,15 @@ body is hollow so a green LED can be added later.
 | File | Print in | Notes |
 |---|---|---|
 | `0_test_fit_ring.stl` | any | 10 mm slice of the cuff. Print this first (about 20 min) to check the fit. |
-| `1_cuff.stl` | black / dark grey | Open C-cuff, slides on from the palm side. Print standing up (as exported). |
-| `2_housing.stl` | black / dark grey | Watch body. Flat side down. |
-| `3_dial.stl` | grey / silver | The turning ring. Flat flange side down. |
+| `1_cuff.stl` | black + green | Armoured C-cuff, slides on from the palm side. Print standing up (as exported). For the green stripe, add filament changes (M600 / "pause at height") at **14 mm** (switch to green) and **26 mm** (back to black). |
+| `2_housing.stl` | white / light grey | Watch body with the four pylons. Flat side down. |
+| `3_dial.stl` | grey / silver | The turning part. Flat flange side down. |
+| `3b_dial_grip.stl` | grey / silver | Ridged collar that goes on the dial after the bezel. |
 | `4_face.stl` | black | Face plate with the hourglass window. |
 | `5_hourglass_insert.stl` | green (translucent green if you'll add an LED) | Thin lip side down. |
-| `6_bezel.stl` | grey / silver | Ring that traps the dial. |
+| `6_bezel.stl` | black | Ring that traps the dial. |
 | `7_pin_x2.stl` | any | Print 2. Locate the body on the cuff. |
+| `8_light_bar_x4.stl` | green (translucent is best) | Print 4. Press into the pylon tops. |
 
 ## Size
 
@@ -39,7 +43,9 @@ To resize, change `WRIST_INNER_W` / `WRIST_INNER_H` at the top of
 2. Glue the face into the top of the dial.
 3. Drop the dial into the housing. The two little nubs on the flange click into the grooves in the wall.
 4. Glue the bezel onto the top of the housing wall (glue only on the wall, keep it off the dial). The dial should turn freely and click.
-5. Push the 2 pins into the cuff's top pad, then glue the housing onto the pins and pad.
+5. Slide the grip collar down over the dial until it sits on the step, line its ridges up with the bezel notches, and glue it to the dial (not the bezel).
+6. Press the 4 green light bars into the pylon slots.
+7. Push the 2 pins into the cuff's top pad, then glue the housing onto the pins and pad.
 
 ## Optional light
 

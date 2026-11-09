@@ -10,8 +10,8 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(__file__))
 import build  # noqa: E402
 
-COLORS = {"cuff": "#2b2b2b", "housing": "#3a3a3a", "bezel": "#9a9a9a",
-          "dial": "#b0b0b0", "face": "#1c1c1c", "insert": "#39d353"}
+COLORS = {"cuff": "#262626", "stripe": "#2fbf4a", "bars": "#3dff6a", "housing": "#d9dbe0", "bezel": "#2a2a2a",
+          "dial": "#8d929b", "face": "#141414", "insert": "#3dff6a"}
 LIGHT = np.array([0.4, 0.8, 0.6]) / np.linalg.norm([0.4, 0.8, 0.6])
 
 
@@ -82,5 +82,5 @@ if __name__ == "__main__":
     render(os.path.join(out, "assembled.png"))
     up = lambda d: [0, d, 0]
     render(os.path.join(out, "exploded.png"),
-           offsets={"housing": up(8), "dial": up(22), "bezel": up(36), "insert": up(46), "face": up(56)})
+           offsets={"housing": up(8), "bars": up(16), "dial": up(22), "bezel": up(36), "insert": up(46), "face": up(56)})
     print("images written to", os.path.abspath(out))
