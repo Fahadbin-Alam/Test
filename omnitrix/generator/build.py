@@ -17,14 +17,15 @@ OUT = os.path.join(os.path.dirname(__file__), "..", "stl")
 SEG = 128
 
 # ---------------- WRIST / CUFF SETTINGS ----------------
-WRIST_INNER_W = 62.0   # inside width of the cuff, side to side (mm)
-WRIST_INNER_H = 50.0   # inside height of the cuff, top to palm side (mm)
+# Sized for Fahad's 15 cm wrist: inside is about 16 cm around (1 cm of comfort room)
+WRIST_INNER_W = 56.5   # inside width of the cuff, side to side (mm)
+WRIST_INNER_H = 45.6   # inside height of the cuff, top to palm side (mm)
 CUFF_WALL = 5.0        # band thickness
 RAIL = 1.6             # extra thickness of the raised armour rails on the band edges
 RAIL_W = 8.0           # width of each rail
 STRIPE = (14.0, 26.0)  # heights for the green filament-change stripe on the band
 CUFF_WIDTH = 40.0      # band width along the arm
-CUFF_GAP = 40.0        # opening on the palm side, to slide the wrist in
+CUFF_GAP = 38.0        # opening on the palm side, to slide the wrist in
 TEST_RING_WIDTH = 10.0
 
 # ---------------- DIAL SETTINGS ----------------
@@ -49,9 +50,18 @@ def oval(a, b, n=SEG):
     return [(a * math.cos(x), b * math.sin(x)) for x in t]
 
 
-def hourglass(scale=1.0):
-    pts = [(-10, 11), (10, 11), (1.8, 0), (10, -11), (-10, -11), (-1.8, 0)]
-    return [(x * scale, y * scale) for x, y in pts[::-1]]  # counter-clockwise
+HG_R = 15.0     # the green hourglass runs right out to this circle, like the show
+
+
+def hourglass_cs():
+    """Two wedges meeting at a narrow waist, clipped to a circle."""
+    far, half = 30.0, math.radians(38)
+    pts = [(-1.4, 0), (-far * math.sin(half), far * math.cos(half)), (far * math.sin(half), far * math.cos(half)),
+           (1.4, 0), (far * math.sin(half), -far * math.cos(half)), (-far * math.sin(half), -far * math.cos(half))]
+    wedges = CrossSection([pts[::-1]])
+    if wedges.area() < 0:
+        wedges = CrossSection([pts])
+    return wedges ^ CrossSection.circle(HG_R, SEG)
 
 
 # ---------------- PARTS ----------------
@@ -76,6 +86,8 @@ GRIP_Z0 = WALL_TOP + 2.5 + 0.5 - FLANGE_Z   # dial height where the grip collar 
 GRIP_IN = 20.9
 PYLON_H = 19.0          # pylons stand a little above the bezel
 BAR = (2.4, 7.0, 6.0)   # green light bar inserts
+BTN_R = 3.0             # side button radius
+BTN_Z = 7.5             # side button height on the body
 
 
 def housing():
@@ -88,14 +100,15 @@ def housing():
         t = 2 * math.pi * k / CLICKS
         body -= Manifold.cylinder(WALL_TOP, 0.9, 0.9, 24).translate(
             [WALL_IN * math.cos(t), WALL_IN * math.sin(t), 3])
-    # side slot for an on/off switch (fits a small 8x4 mm slide switch)
-    body -= Manifold.cube([8, 8, 4], center=True).translate([HOUSING_R - 2, 0, 7])
+    # side hole for the green activation button (over a 6x6 mm tactile switch)
+    body -= Manifold.cylinder(10, BTN_R + 0.25, BTN_R + 0.25, 48).rotate([0, 90, 0]).translate([HOUSING_R - 6, 0, BTN_Z])
     # pin holes in the base to locate the body on the cuff
     for x in (-PIN_X, PIN_X):
         body -= Manifold.cylinder(2.6, PIN_D / 2 + 0.15, PIN_D / 2 + 0.15, 32).translate([x, 0, -0.01])
     # octagonal armour plate under the body
-    plate = CrossSection([[(37 * math.cos(math.radians(22.5 + 45 * k)), 37 * math.sin(math.radians(22.5 + 45 * k)))
-                           for k in range(8)]]).extrude(4)
+    octo = lambda r: CrossSection([[(r * math.cos(math.radians(22.5 + 45 * k)), r * math.sin(math.radians(22.5 + 45 * k)))
+                                    for k in range(8)]])
+    plate = Manifold.batch_hull([octo(37).extrude(2.6), octo(35.4).extrude(4)])
     plate -= Manifold.cylinder(5, WALL_IN, WALL_IN, SEG).translate([0, 0, 3])  # keep the cavity open
     body = plate + body
     for x in (-PIN_X, PIN_X):
@@ -113,6 +126,14 @@ def housing():
     # trim anything that would rub the bezel
     body -= ring(HOUSING_R + 0.3, HOUSING_R - 1.5, 10).translate([0, 0, WALL_TOP])
     return body
+
+
+def side_button():
+    """Green push button. The flange stays inside the body so it can't fall out."""
+    wall = HOUSING_R - WALL_IN
+    return Manifold.cylinder(1.0, BTN_R + 0.9, BTN_R + 0.9, 48) + \
+        Manifold.cylinder(wall + 2.5, BTN_R, BTN_R, 48).translate([0, 0, 1.0]) + \
+        Manifold.cylinder(0.6, BTN_R, BTN_R - 0.6, 48).translate([0, 0, wall + 3.5])
 
 
 def light_bar():
@@ -154,17 +175,21 @@ def dial_grip():
 
 def face():
     plate = Manifold.cylinder(FACE_T, FACE_R, FACE_R, SEG)
-    win = CrossSection([hourglass()]).offset(0.15, JoinType.Miter).extrude(FACE_T + 2).translate([0, 0, -1])
+    win = hourglass_cs().offset(0.15, JoinType.Miter).extrude(FACE_T + 2).translate([0, 0, -1])
     plate -= win
-    # shallow ring line for detail
-    plate -= ring(FACE_R - 1.5, FACE_R - 2.3, 0.6).translate([0, 0, FACE_T - 0.6])
+    # thin raised ring hugging the hourglass circle, and a chamfered outer edge
+    plate -= ring(HG_R + 1.2, HG_R + 0.6, 0.5).translate([0, 0, FACE_T - 0.5])
+    plate -= (Manifold.cylinder(1.0, FACE_R + 2, FACE_R + 2, SEG)
+              - Manifold.cylinder(1.0, FACE_R, FACE_R - 1.0, SEG)).translate([0, 0, FACE_T - 1.0])
     return plate
 
 
 def hourglass_insert():
-    lip = CrossSection([hourglass()]).offset(0.6, JoinType.Miter).extrude(0.8)
-    core = CrossSection([hourglass()]).extrude(0.8 + FACE_T + 1.0)
-    return lip + core
+    lip = hourglass_cs().offset(0.5, JoinType.Miter).extrude(0.8)
+    core = hourglass_cs().extrude(0.8 + FACE_T + 0.6)
+    # slightly domed top so it catches the light
+    dome = Manifold.cylinder(0.8, HG_R + 0.2, HG_R - 2.5, SEG).translate([0, 0, 0.8 + FACE_T + 0.6])
+    return lip + core + (hourglass_cs().extrude(10) ^ dome)
 
 
 def bezel():
@@ -233,6 +258,7 @@ PARTS = {
     "6_bezel": bezel,
     "7_pin_x2": pin,
     "8_light_bar_x4": light_bar,
+    "9_side_button": side_button,
 }
 
 
@@ -251,7 +277,7 @@ def assembly():
     return {
         "cuff": lo + hi,
         "stripe": mid,
-        "bars": lift(bars),
+        "bars": lift(bars + side_button().rotate([0, 90, 0]).translate([WALL_IN - 1.0, 0, BTN_Z])),
         "housing": lift(housing()),
         "dial": lift(dial().translate([0, 0, FLANGE_Z]) + dial_grip().translate([0, 0, FLANGE_Z + GRIP_Z0])),
         "face": lift(face().translate([0, 0, DIAL_TOP - FACE_T])),
