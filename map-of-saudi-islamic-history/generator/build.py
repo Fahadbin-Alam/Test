@@ -261,10 +261,12 @@ def build_main():
             ox, oy = c * TILE, r * TILE
             solid = heightfield_solid(sub, MAIN_STEP)
             solid = add_rings(solid, pts[0], ox, oy, pts)
-            adds, cuts = [], []
+            adds, cuts, pegs, fused = [], [], [], []
             for (px, py), z, s in zip(pts, pads, MAIN_SITES):
                 if ox <= px < ox + TILE and oy <= py < oy + TILE:
-                    adds.append(peg(px - ox, py - oy, z))
+                    pegs.append(peg(px - ox, py - oy, z))
+                    colour = AMS_MAIN_OVERRIDE.get(s[0], KIND_COLOUR[s[3]])
+                    fused.append((colour, marker(s[3], 4.6, socket=False).translate((px - ox, py - oy, z))))
             for (kx, ky, a) in keys:
                 lx, ly = kx - ox, ky - oy
                 if -16 <= lx <= TILE + 16 and -16 <= ly <= TILE + 16:
@@ -286,6 +288,9 @@ def build_main():
             if cuts:
                 solid = solid - Manifold.batch_boolean(cuts, m3.OpType.Add)
             tiles.append((name, solid))
+            ams_parts(f"main_{name}", solid, fused, sea_z=sea_z)
+            if pegs:
+                solid = solid + Manifold.batch_boolean(pegs, m3.OpType.Add)
             save_stl(solid, f"main_{name}.stl")
     return h, pts
 
@@ -415,9 +420,10 @@ def build_inset(cfg):
     pts = [mm(s[1], s[2]) for s in cfg["sites"]]
     pads = [flatten_pad(h, step, px, py, pad_radius(i, pts, 4.5)) for i, (px, py) in enumerate(pts)]
 
-    adds, cuts = [], []
-    for (px, py), z in zip(pts, pads):
-        adds.append(peg(px, py, z))
+    adds, cuts, pegs, fused, trench = [], [], [], [], []
+    for (px, py), z, s in zip(pts, pads, cfg["sites"]):
+        pegs.append(peg(px, py, z))
+        fused.append((KIND_COLOUR[s[3]], marker(s[3], 6.5, socket=False).translate((px, py, z))))
 
     if cfg["trench"]:
         tp = [mm(la, lo) for la, lo in cfg["trench"]]
@@ -429,7 +435,7 @@ def build_inset(cfg):
         for (ax, ay), (bx, by) in zip(seg[:-1], seg[1:]):
             za = h[int(round(ay / step)), int(round(ax / step))] - 1.2
             zb = h[int(round(by / step)), int(round(bx / step))] - 1.2
-            cuts.append(Manifold.hull(cyl(0.7, za, za + 40, ax, ay, 12) + cyl(0.7, zb, zb + 40, bx, by, 12)))
+            trench.append(Manifold.hull(cyl(0.7, za, za + 40, ax, ay, 12) + cyl(0.7, zb, zb + 40, bx, by, 12)))
 
     cap = None
     if cfg["light_peak"]:
@@ -468,9 +474,21 @@ def build_inset(cfg):
     solid = heightfield_solid(h, step)
     solid = solid + Manifold.batch_boolean(adds, m3.OpType.Add)
     solid = solid - Manifold.batch_boolean(cuts, m3.OpType.Add)
+    # multicolour (AMS) version: trench filled red, Hira summit white, markers fused on
+    ams_solid, extra = solid, []
+    if trench:
+        tr = Manifold.batch_boolean(trench, m3.OpType.Add)
+        extra.append(("red", ams_solid ^ tr))
+        ams_solid = ams_solid - tr
+        solid = solid - tr
     if cfg["light_peak"]:
         sx, sy, cut_z, cap_r, sz = cap_info
         body = cyl(cap_r, cut_z, sz + 5, sx, sy, 48)
+        extra.append(("white", ams_solid ^ body))
+        ams_solid = ams_solid - body
+    ams_parts(f"inset_{name.lower()}", ams_solid, fused + extra)
+    solid = solid + Manifold.batch_boolean(pegs, m3.OpType.Add)
+    if cfg["light_peak"]:
         cap = solid ^ body
         solid = solid - body
         solid = solid + cyl(1.0, cut_z - 0.5, cut_z + 1.0, sx, sy, 16)       # nub
@@ -484,9 +502,92 @@ def build_inset(cfg):
     return h, step, pts, cap, datum
 
 
+# ------------------------------------------------------- multicolour (AMS)
+KIND_COLOUR = {"kaaba": "black", "light": "white", "mosque": "green", "battle": "red", "site": "gold"}
+# B1 would otherwise need 5 colours; Hudaybiyyah (the peace treaty) prints white there.
+AMS_MAIN_OVERRIDE = {"Hudaybiyyah": "white"}
+COLOUR_ORDER = ["brown", "blue", "white", "black", "red", "green", "gold"]
+COLOUR_HEX = {"brown": "#8B5A2B", "blue": "#3A7BC8", "white": "#FFFFFF", "black": "#161616",
+              "red": "#C62828", "green": "#1F8A3B", "gold": "#E0B020"}
+OUT_AMS = os.path.join(HERE, "..", "ams")
+AMS_TABLE = []
+
+
+def ams_parts(name, solid, fused, sea_z=None):
+    """Split a tile into colour parts and write <name>.3mf plus one STL per colour."""
+    parts = {}
+    land = solid
+    if sea_z is not None:
+        slab = Manifold.cube((TILE + 2, TILE + 2, SEA_DROP + 0.002)).translate((-1, -1, sea_z - SEA_DROP))
+        sea = (solid ^ slab) - solid.translate((0, 0, -(SEA_DROP - 0.01)))
+        if sea.volume() > 1:
+            parts["blue"] = sea
+            land = land - sea
+    for colour, m in fused:
+        m = m - land                       # never overlap the brown body
+        parts[colour] = parts[colour] + m if colour in parts else m
+    for colour in list(parts):
+        if colour != "blue":
+            land = land - parts[colour]
+    parts = {"brown": land, **parts}
+    order = [c for c in COLOUR_ORDER if c in parts]
+    assert len(order) <= 4, f"{name} needs {len(order)} colours"
+    d = os.path.join(OUT_AMS, "stl", name)
+    os.makedirs(d, exist_ok=True)
+    for f in os.listdir(d):
+        os.remove(os.path.join(d, f))
+    global OUT_STL
+    keep, OUT_STL = OUT_STL, d
+    for i, c in enumerate(order, 1):
+        save_stl(parts[c], f"{name}_{i}_{c}.stl")
+    OUT_STL = keep
+    write_3mf(os.path.join(OUT_AMS, f"{name}.3mf"), name, [(c, parts[c]) for c in order])
+    AMS_TABLE.append((name, order))
+
+
+def write_3mf(path, name, parts):
+    """Bambu Studio / OrcaSlicer 3MF: one object, one part per colour, filament slots 1..n."""
+    import zipfile
+    objs, comps, cfg = [], [], []
+    for i, (colour, m) in enumerate(parts, 1):
+        mesh = m.to_mesh()
+        v = np.asarray(mesh.vert_properties)[:, :3]
+        t = np.asarray(mesh.tri_verts)
+        vs = "".join(f'<vertex x="{a:.4f}" y="{b:.4f}" z="{c:.4f}"/>' for a, b, c in v)
+        ts = "".join(f'<triangle v1="{a}" v2="{b}" v3="{c}"/>' for a, b, c in t)
+        objs.append(f'<object id="{i}" type="model"><mesh><vertices>{vs}</vertices><triangles>{ts}</triangles></mesh></object>')
+        comps.append(f'<component objectid="{i}"/>')
+        cfg.append(f'<part id="{i}" subtype="normal_part"><metadata key="name" value="{colour}"/>'
+                   f'<metadata key="extruder" value="{i}"/></part>')
+    top = len(parts) + 1
+    model = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+             '<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">'
+             '<metadata name="Application">BambuStudio-01.10.00.00</metadata>'
+             '<metadata name="BambuStudio:3mfVersion">1</metadata>'
+             f'<metadata name="Title">{name}</metadata><resources>' + "".join(objs) +
+             f'<object id="{top}" type="model"><components>' + "".join(comps) + '</components></object>'
+             f'</resources><build><item objectid="{top}" transform="1 0 0 0 1 0 0 0 1 28 28 0" printable="1"/></build></model>')
+    settings = ('<?xml version="1.0" encoding="UTF-8"?>\n<config>'
+                f'<object id="{top}"><metadata key="name" value="{name}"/><metadata key="extruder" value="1"/>'
+                + "".join(cfg) + '</object></config>')
+    ct = ('<?xml version="1.0" encoding="UTF-8"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+          '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+          '<Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/>'
+          '<Default Extension="config" ContentType="text/xml"/></Types>')
+    rels = ('<?xml version="1.0" encoding="UTF-8"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>')
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml", ct)
+        z.writestr("_rels/.rels", rels)
+        z.writestr("3D/3dmodel.model", model)
+        z.writestr("Metadata/model_settings.config", settings)
+    print(f"  {os.path.basename(path)}: {', '.join(f'{i}={c}' for i, (c, _) in enumerate(parts, 1))}")
+
+
 # ------------------------------------------------------------------ markers
-def marker(kind, d):
-    """A marker with a flat base and a socket underneath. d = base width (mm)."""
+def marker(kind, d, socket=True):
+    """A marker with a flat base (and a socket underneath for the peg). d = base width (mm)."""
     r = d / 2
     if kind == "kaaba":
         m = Manifold.cube((d * 0.9, d * 0.9, d * 0.9)).translate((-d * 0.45, -d * 0.45, 0)).rotate((0, 0, 45))
@@ -499,7 +600,7 @@ def marker(kind, d):
         m = Manifold.cylinder(2.5, r, r, 8) + Manifold.cylinder(d * 1.2, r, 0.3, 8).translate((0, 0, 2.5))
     else:  # site
         m = Manifold.cylinder(d * 0.75, r, r, 6)
-    return m - cyl(SOCKET_R, -1, SOCKET_H, 0, 0, 24)
+    return m - cyl(SOCKET_R, -1, SOCKET_H, 0, 0, 24) if socket else m
 
 
 def build_markers(cap):

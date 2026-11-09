@@ -131,11 +131,59 @@ of Hunayn (its exact battlefield is debated) and the line of the Trench (drawn
 across the open north side of Medina between the two lava fields, near Jabal
 Sal'). Tabuk and Mu'tah are too far north to fit on this map.
 
+## Printing in colour on a Bambu P1S with AMS (recommended)
+
+The `ams/` folder has a multicolour version of every tile, so the colours
+print straight into the map: no pegs, no painting, no gluing.
+
+* the **Red Sea** prints **blue** (its top 0.6 mm), with the scale bar, north
+  arrow and "RED SEA" standing out in brown
+* the markers are printed **on** the tiles in colour: black Kaaba, white Hira
+  cone, green dome for Medina, red spires for battles, gold hexagons
+* on the Mecca close-up, the **top 150 m of Jabal al-Nour prints white**
+* on the Medina close-up, the **Trench** groove is filled **red**
+
+Each tile uses at most 4 colours, so it fits one AMS. Brown is always slot 1:
+
+| Tile | Slot 1 | Slot 2 | Slot 3 | Slot 4 |
+|---|---|---|---|---|
+| `main_A1.3mf` | brown | blue | | |
+| `main_A2.3mf` | brown | blue | red | |
+| `main_A3.3mf` | brown | red | | |
+| `main_B1.3mf` | brown | white | black | red |
+| `main_B2.3mf` | brown | green | | |
+| `main_B3.3mf` | brown | | | |
+| `inset_mecca.3mf` | brown | white | black | gold |
+| `inset_medina.3mf` | brown | red | green | gold |
+
+A sensible AMS load is **brown, blue, white, black**, then swap blue for red,
+green or gold for the tiles that need them. On tile B1 the Hudaybiyyah marker
+prints **white** instead of gold (the treaty was a peace), which keeps B1 at 4
+colours.
+
+How to print one tile:
+
+1. Open the `.3mf` in Bambu Studio. It loads as one object with one part per
+   colour, already set to filaments 1–4 in the order above.
+2. In the filament list on the left, set each filament to the matching AMS
+   slot and colour (or click the AMS sync button).
+3. Slice and print. Use 0.2 mm layers; the colour parts are small, so the
+   purge waste is modest. Set "Flush into objects' infill" to save filament.
+
+If the colours don't come through (older slicer versions can ignore the part
+settings in a 3MF), use the STL parts instead: select **all** the files in
+`ams/stl/<tile>/` at once, drag them into Bambu Studio, and answer **Yes** to
+"Load these files as a single object with multiple parts?". The number in each
+file name is its filament slot, and the colour is in the name.
+
+The keys, the legend plaque and the joining instructions are the same as the
+single-colour version below. The peg markers in `stl/` are only needed for a
+single-colour printer.
+
 ## Printing
 
-The tiles are 200 × 200 mm so they fit a 220 × 220 mm bed (Ender-3 / K1 /
-CR-10 SE class) with room for a skirt. If your bed is bigger, the same files
-still print fine.
+The tiles are 200 × 200 mm so they fit a 220 × 220 mm bed with room for a
+skirt, and the P1S's 256 × 256 mm bed easily.
 
 Suggested settings (PLA):
 
