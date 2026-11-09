@@ -9,12 +9,31 @@ be added later.
 ![assembled](images/assembled.png)
 ![exploded](images/exploded.png)
 
+## Quick start: Bambu P1S + AMS
+
+Open **`omnitrix_full_kit_AMS.3mf`** in Bambu Studio. Every part is already
+laid out on one 256 x 256 mm plate and named with its colour. Load your AMS
+with these filaments and check each part's filament:
+
+| AMS slot | Filament | Parts |
+|---|---|---|
+| 1 | Black | cuff (top and bottom), bezel, face, pins |
+| 2 | Green (translucent if you'll add an LED) | cuff stripe, hourglass, 4 light bars |
+| 3 | White | housing |
+| 4 | Grey / silver | dial, dial grip |
+
+If Bambu Studio doesn't pick the colours up by itself, click each part in the
+object list (they're named "(Black)", "(Green)" and so on) and set the filament
+number. Then slice with the 0.20 mm Standard profile and print, no supports.
+
+Print `stl/0_test_fit_ring.stl` on its own first to check the fit.
+
 ## Parts (`stl/`)
 
 | File | Print in | Notes |
 |---|---|---|
 | `0_test_fit_ring.stl` | any | 10 mm slice of the cuff. Print this first (about 20 min) to check the fit. |
-| `1_cuff.stl` | black + green | Armoured C-cuff, slides on from the palm side. Print standing up (as exported). For the green stripe, add filament changes (M600 / "pause at height") at **14 mm** (switch to green) and **26 mm** (back to black). |
+| `1_cuff.stl` | black + green | Armoured C-cuff, slides on from the palm side. Print standing up (as exported). The green stripe is a separate part in the 3MF, so the AMS prints it automatically (no pauses). |
 | `2_housing.stl` | white / light grey | Watch body with the four pylons. Flat side down. |
 | `3_dial.stl` | grey / silver | The turning part. Flat flange side down. |
 | `3b_dial_grip.stl` | grey / silver | Ridged collar that goes on the dial after the bezel. |
@@ -60,4 +79,5 @@ translucent green hourglass.
 pip install manifold3d trimesh numpy matplotlib
 python3 generator/build.py     # writes stl/
 python3 generator/preview.py   # writes images/
+python3 generator/export_3mf.py  # writes omnitrix_full_kit_AMS.3mf
 ```
