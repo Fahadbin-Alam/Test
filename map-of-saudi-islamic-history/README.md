@@ -3,7 +3,12 @@
 A 3D-printable relief map of western Saudi Arabia, from Ta'if and Mecca in the
 south to Khaybar in the north, built from real elevation data and printed in
 tiles that join into one map. It marks Mecca, Medina, Jabal al-Nour (Cave of
-Hira), and the main battles and events of the Prophet's life.
+Hira), and the main battles and events of the Prophet's life, and **connects
+them with the routes he travelled**: the Hijra from Mecca to Medina, and the
+marches out of Medina to Badr, Khaybar, Hudaybiyyah and Mecca, then on to
+Hunayn and Ta'if.
+
+![Multicolour print with the routes](preview/routes-map-ams.png)
 
 ![Main map preview](preview/main_map.png)
 
@@ -18,7 +23,7 @@ Hira), and the main battles and events of the Prophet's life.
 | Main map tiles `stl/main_A1 … main_B3.stl` | 200 × 200 mm each, 400 × 600 mm assembled | 6 | Brown |
 | Mecca inset `stl/inset_mecca.stl` | 200 × 200 mm | 1 | Brown |
 | Medina inset `stl/inset_medina.stl` | 200 × 200 mm | 1 | Brown |
-| Legend plaque `stl/legend_plaque.stl` (title, key, scale bars) | 200 × 150 mm | 1 | Brown (or any) |
+| Legend plaque `stl/legend_plaque.stl` (title, key, route lengths, scale bars) | 200 × 195 mm | 1 | Brown (or any) |
 | Joining keys `stl/joining_keys.stl` (bow-ties) | 30 × 14 mm | 14 + 2 spare | Brown |
 | Kaaba markers `stl/markers_black_kaaba.stl` | cube | 2 + 1 spare | **Black** |
 | Hira markers `stl/markers_white_light.stl` (peak cone for the main map + the summit cap for the Mecca inset) | | 1 + cap + 1 spare | **White** |
@@ -84,6 +89,53 @@ the Medina inset the same area around the city.
 * insets: 1 mm of height = 40 m (2.5× exaggeration), measured from a base
   level of 200 m (Mecca) or 550 m (Medina), which is 4.6 mm above the bottom.
 
+## The Prophet's journeys: routes connecting the places
+
+Every battle and event on the map is joined to Medina (or Mecca) by the route
+the Prophet took to get there, so you can trace each journey with a finger and
+read how long it was. The routes are 1.4 mm grooves that follow the terrain;
+on the multicolour print they are filled **red** for his marches and
+campaigns and **white, dashed** for the Hijra.
+
+| Route | Line | When | Stations it passes | Length |
+|---|---|---|---|---|
+| The Hijra, Mecca to Medina | white, dashed | 1 AH / 622 CE | Cave of Thawr, down to the coast, west of Usfan and Qudayd, al-Kharrar, Quba | 449 km |
+| March to Badr | red | 2 AH / 624 CE | Dhul-Hulayfa, al-Rawha | 134 km |
+| Journey to Hudaybiyyah | red | 6 AH / 628 CE | Dhul-Hulayfa, al-Rawha, al-Abwa, al-Juhfa, Qudayd, Usfan | 404 km |
+| March to Khaybar | red | 7 AH / 628 CE | north across the harrat | 151 km |
+| Conquest of Mecca (and the Farewell Hajj, 10 AH) | red | 8 AH / 630 CE | the same road, then Marr al-Zahran (Wadi Fatima) | 419 km |
+| Hunayn and the siege of Ta'if | red | 8 AH / 630 CE | Hunayn valley | 112 km |
+
+The Medina-Mecca road is shared by the journeys to Hudaybiyyah and the Conquest
+(and later the Farewell Hajj), so it prints once and forks at Usfan. The Hijra
+runs beside it, nearer the sea, because the Prophet and Abu Bakr left the main
+road to avoid being followed.
+
+The close-ups carry the same routes in more detail:
+
+* **Medina:** the road leaving the Prophet's Mosque past Dhul-Hulayfa toward
+  Badr and Mecca, the road north to Khaybar, the march to Uhud (3 AH / 625 CE),
+  and the Hijra arriving from the south at Quba and then the Mosque. Raised
+  labels at the tile edge give the full distances ("to Khaybar 151 km").
+* **Mecca:** the Hijra from the Kaaba up to the Cave of Thawr and away to the
+  west, and the Farewell Hajj route (gold) from the Kaaba to Mina, Muzdalifah
+  and Arafat.
+
+| Medina close-up | Mecca close-up |
+|---|---|
+| ![Medina routes](preview/routes-medina-inset-ams.png) | ![Mecca routes](preview/routes-mecca-inset-ams.png) |
+
+![The Hijra along the coast, beside the main road](preview/routes-coast-hijra-ams.png)
+
+**How the routes were drawn.** Nobody recorded the exact tracks, only the
+stations along them, and several of those are known only to within a few
+kilometres. So each route goes through its stations (listed in
+`generator/sites.py`) and, between them, follows the path of least effort over
+the real terrain, the way a caravan would go: along the wadis and over the
+lowest passes (`generator/routes.py`). Treat the lines as accurate to a few
+kilometres, which is a few millimetres on the main map. The lengths are
+measured along the drawn line.
+
 ## Colour plan
 
 Everything you print for the land is **brown**. Colour comes from the small
@@ -97,6 +149,7 @@ printer with no filament changes.
 | **Green** | Dome | Medina / the Prophet's Mosque |
 | **Red** | Spire | Badr, Uhud, the Trench, Khaybar, Hunayn, Ta'if |
 | **Gold** | Hexagon | Hudaybiyyah, Cave of Thawr, Quba, Qiblatayn, Mina, Muzdalifah, Arafat |
+| **Red / white lines** | Grooves | The Prophet's marches (red) and the Hijra (white, dashed); the Farewell Hajj route on the Mecca close-up is gold |
 
 **Sand-sculpture look:** print every brown piece in a sand, tan or beige PLA
 instead and the map reads like a model shaped out of desert sand, with the
@@ -104,7 +157,7 @@ coloured markers standing out even more. Nothing else changes.
 
 Optional extras: paint the Red Sea blue (it is a flat, recessed surface with a
 crisp coastline, easy to mask), and run a red paint pen along the engraved
-groove of the Trench on the Medina inset.
+grooves of the routes and the Trench, and a white one along the dashed Hijra.
 
 ## Sites on the map
 
@@ -184,25 +237,29 @@ print straight into the map: no pegs, no painting, no gluing.
   cone, green dome for Medina, red spires for battles, gold hexagons
 * on the Mecca close-up, the **top 150 m of Jabal al-Nour prints white**
 * on the Medina close-up, the **Trench** groove is filled **red**
+* the **routes** are filled: red for the marches, white dashes for the Hijra,
+  gold for the Farewell Hajj on the Mecca close-up
 
 Each tile uses at most 4 colours, so it fits one AMS. Brown is always slot 1:
 
 | Tile | Slot 1 | Slot 2 | Slot 3 | Slot 4 |
 |---|---|---|---|---|
-| `main_A1.3mf` | brown | blue | | |
-| `main_A2.3mf` | brown | blue | red | |
+| `main_A1.3mf` | brown | blue | white | red |
+| `main_A2.3mf` | brown | blue | white | red |
 | `main_A3.3mf` | brown | red | | |
 | `main_B1.3mf` | brown | white | black | red |
-| `main_B2.3mf` | brown | green | | |
-| `main_B3.3mf` | brown | | | |
+| `main_B2.3mf` | brown | white | red | green |
+| `main_B3.3mf` | brown | red | | |
 | `inset_mecca.3mf` | brown | white | black | gold |
-| `inset_medina.3mf` | brown | red | green | gold |
+| `inset_medina.3mf` | brown | white | red | green |
 | `haram_model.3mf` | light grey | white | black | gold |
 
-A sensible AMS load is **brown, blue, white, black**, then swap blue for red,
-green or gold for the tiles that need them. On tile B1 the Hudaybiyyah marker
-prints **white** instead of gold (the treaty was a peace), which keeps B1 at 4
-colours.
+A sensible AMS load is **brown, white, red** plus one more, which you swap
+per tile: blue for A1 and A2, black for B1, green for B2 and the Medina inset,
+and black and gold (in place of red) for the Mecca inset. Two markers change
+colour to stay within 4: on tile B1 the Hudaybiyyah marker prints **white**
+instead of gold (the treaty was a peace), and on the Medina inset Quba and
+Qiblatayn print **white** (the Hijra needs the white slot there).
 
 How to print one tile:
 
@@ -283,7 +340,9 @@ The first run downloads about 135 small elevation tiles (a few MB) (cached in
 * `MAIN_KM_PER_MM` – map scale (1.0 means 1 mm = 1 km)
 * `MAIN_M_PER_MM_Z`, `INSET_M_PER_MM_Z` – vertical exaggeration
 * `MAIN_E0`, `MAIN_N0`, `MAIN_COLS`, `MAIN_ROWS` – which area the map covers
-* Sites, dates and marker colours live in `generator/sites.py`.
+* Sites, dates and marker colours live in `generator/sites.py`, and so do the
+  routes (`STATIONS`, `ROUTES`, and each inset's `routes`).
+* `ROUTE_W`, `ROUTE_DEPTH` – width and depth of the route grooves
 
 ## Data and accuracy
 
@@ -294,13 +353,16 @@ The first run downloads about 135 small elevation tiles (a few MB) (cached in
 * Site coordinates: WGS84, mostly accurate to within a few hundred metres,
   which is under half a millimetre on the main map.
 * Projection: UTM zone 37N (EPSG:32637).
+* Routes: least-effort paths over the same elevation data through the
+  stations named in the sira; approximate (see the routes section above).
 
 ## Interactive 3D viewer
 
 `viewer/index.html` is a 3D version of the whole map and both close-ups that
 runs in any browser. Tap any mountain, valley or marker to see how far it is
 from the Kaaba (km, miles, and cm/inches on the print), its height and
-position. It has a **Measure** mode for any two points, the same 50 km
+position. Tap a route to see which journey it was, when, the stations it
+passed and how long it was; the **Routes** button shows or hides them. It has a **Measure** mode for any two points, the same 50 km
 distance rings as the print, a **Sand** look, and a height slider. Open the
 file locally, or use the hosted copy.
 

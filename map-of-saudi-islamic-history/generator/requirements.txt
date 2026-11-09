@@ -4,3 +4,4 @@ pillow
 pyproj
 manifold3d
 matplotlib
+shapely

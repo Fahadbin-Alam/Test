@@ -18,7 +18,7 @@ import urllib.request
 
 import numpy as np
 from PIL import Image
-from scipy.ndimage import gaussian_filter, map_coordinates
+from scipy.ndimage import gaussian_filter, map_coordinates, binary_dilation
 from pyproj import Transformer
 import manifold3d as m3
 from manifold3d import Manifold, CrossSection, FillRule
@@ -26,7 +26,8 @@ from matplotlib.textpath import TextPath
 from matplotlib.font_manager import FontProperties
 
 sys.path.insert(0, os.path.dirname(__file__))
-from sites import MAIN_SITES, MECCA_INSET, MEDINA_INSET  # noqa: E402
+from sites import MAIN_SITES, MECCA_INSET, MEDINA_INSET, STATIONS, ROUTES  # noqa: E402
+import routes as rt  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_STL = os.path.join(HERE, "..", "stl")
@@ -60,6 +61,14 @@ CAP_DEPTH_M = 150.0              # Jabal al-Nour: top this many metres print whi
 # mountain and read how far it is from Mecca. Set to [] to turn off.
 RING_KM = list(range(50, 601, 50))
 RING_W, RING_DEPTH = 1.0, 0.5    # groove width and depth, mm
+# The Prophet's journeys (sites.ROUTES): grooves, filled red / white on the AMS.
+ROUTE_W, ROUTE_W_INSET = 1.4, 1.2  # groove width, mm
+ROUTE_DEPTH = 0.6
+DASH_MAIN, DASH_INSET = (4.0, 2.5), (3.0, 2.0)   # the Hijra is dashed: on, off (mm)
+ROUTE_LEN = {}                   # key -> length in km along the traced route
+MAIN_ROUTES = {}                 # key -> (n, 2) polyline in main-map mm
+ROUTE_PTS = None                 # dense route points, kept clear of ring labels
+ROUTE_EXPORT = {}                # view -> routes in UTM km, for the interactive viewer
 
 to_utm = Transformer.from_crs(4326, 32637, always_xy=True)
 to_geo = Transformer.from_crs(32637, 4326, always_xy=True)
@@ -208,6 +217,100 @@ def pad_radius(i, pts, default):
     return min([default] + [d / 2 - 0.1 for d in others])
 
 
+# ---------------------------------------------------------------- journeys
+def shp_cs(g):
+    """shapely (Multi)Polygon -> CrossSection."""
+    polys = [g] if g.geom_type == "Polygon" else [x for x in getattr(g, "geoms", []) if x.geom_type == "Polygon"]
+    rings = []
+    for p in polys:
+        if p.is_empty:
+            continue
+        rings.append(np.asarray(p.exterior.coords)[:-1])
+        rings += [np.asarray(r.coords)[:-1] for r in p.interiors]
+    rings = [r for r in rings if len(r) >= 3]
+    return CrossSection(rings, FillRule.EvenOdd) if rings else None
+
+
+def route_shapes(lines, width, dash, clear):
+    """[(colour, polyline mm)] -> {colour: outline}. The Hijra (white) is dashed and
+    wins where routes cross; nothing is drawn under a marker (clear = [(x, y, r)])."""
+    from shapely.geometry import LineString, Point
+    from shapely.ops import unary_union
+    geo = {}
+    for colour, p in lines:
+        parts = rt.dashes(p, *dash) if colour == "white" else [p]
+        g = unary_union([LineString(q).buffer(width / 2, quad_segs=4) for q in parts if len(q) >= 2])
+        geo[colour] = geo[colour].union(g) if colour in geo else g
+    holes = unary_union([Point(x, y).buffer(r, quad_segs=8) for x, y, r in clear])
+    for c in geo:
+        geo[c] = geo[c].difference(holes)
+    if "white" in geo:
+        for c in geo:
+            if c != "white":
+                geo[c] = geo[c].difference(geo["white"].buffer(0.25))
+    return geo
+
+
+def carve_routes(solid, geo, ox=0.0, oy=0.0, size=(TILE, TILE)):
+    """Cut the route grooves (following the terrain). Returns the carved solid and
+    the [(colour, inlay)] that fill them on the multicolour version."""
+    from shapely.geometry import box
+    from shapely.affinity import translate
+    lowered = solid.translate((0, 0, -ROUTE_DEPTH))
+    out, inlays = solid, []
+    for colour, g in geo.items():
+        g = translate(g.intersection(box(ox, oy, ox + size[0], oy + size[1])), -ox, -oy)
+        cs = shp_cs(g) if not g.is_empty else None
+        if cs is None or cs.area() < 0.05:
+            continue
+        groove = cs.extrude(200).translate((0, 0, 0.5)) - lowered
+        inlays.append((colour, solid ^ groove))
+        out = out - groove
+    return out, inlays
+
+
+def trace_main_routes(h, pts):
+    sea = h < BASE - SEA_DROP + 0.01
+    blocked = binary_dilation(sea, iterations=3)          # keep 3 km off the sea
+    blocked[:, [0, -1]] = True
+    blocked[[0, -1], :] = True
+    elev = (h - BASE) * MAIN_M_PER_MM_Z
+
+    def mm(name):
+        la, lo = STATIONS[name]
+        e, n = to_utm.transform(lo, la)
+        return ((e / 1000 - MAIN_E0) / MAIN_KM_PER_MM, (n / 1000 - MAIN_N0) / MAIN_KM_PER_MM)
+
+    # campaigns first, then the Hijra, kept beside (not on) the campaign roads
+    for key, _name, colour, _date, st in sorted(ROUTES, key=lambda r: r[2] == "white"):
+        wp = [mm(x) for x in st]
+        others = [p for p in pts if min(math.hypot(p[0] - w[0], p[1] - w[1]) for w in wp) > 1.0]
+        lines = list(MAIN_ROUTES.values()) if colour == "white" else ()
+        extra = rt.keep_away(h.shape, MAIN_STEP, lines=lines, line_d=4.0, points=others, point_d=6.0,
+                             free=[wp[0], wp[-1]], free_r=4.0)
+        p = rt.trace(elev, MAIN_STEP, 1 / MAIN_KM_PER_MM, blocked, wp, extra)
+        MAIN_ROUTES[key] = rt.smooth(p, 2.5, keep=wp[1:-1])
+        ROUTE_LEN[key] = rt.length(MAIN_ROUTES[key]) * MAIN_KM_PER_MM
+        print(f"  route {key}: {ROUTE_LEN[key]:.0f} km")
+    for key, name, colour, date, st in ROUTES:
+        utm = MAIN_ROUTES[key] * MAIN_KM_PER_MM + (MAIN_E0, MAIN_N0)
+        ROUTE_EXPORT.setdefault("main", []).append(dict(
+            key=key, name=name, date=date, colour=colour, stations=st, km=round(ROUTE_LEN[key], 1),
+            utm=np.round(rt.resample(utm, 0.5), 2).tolist()))
+    colour = {r[0]: r[2] for r in ROUTES}
+    geo = route_shapes([(colour[k], p) for k, p in MAIN_ROUTES.items()], ROUTE_W, DASH_MAIN,
+                       [(x, y, 3.3) for x, y in pts])
+    # sanity check: no groove reaches the sea
+    for c, g in geo.items():
+        polys = [g] if g.geom_type == "Polygon" else list(g.geoms)
+        for x, y in np.vstack([np.asarray(q.exterior.coords) for q in polys]):
+            j, i = int(round(y / MAIN_STEP)), int(round(x / MAIN_STEP))
+            if 0 <= j < h.shape[0] and 0 <= i < h.shape[1] and sea[j, i]:
+                print(f"  warning: {c} route touches the sea at {x:.0f}, {y:.0f}")
+                break
+    return geo
+
+
 # -------------------------------------------------------------- the main map
 def build_main():
     print("Main map: downloading / sampling terrain ...")
@@ -235,6 +338,9 @@ def build_main():
         pads.append(flatten_pad(h, MAIN_STEP, px, py, r))
 
     np.save(os.path.join(CACHE, "main_h.npy"), h)
+    route_geo = trace_main_routes(h, pts)
+    global ROUTE_PTS
+    ROUTE_PTS = np.vstack([rt.resample(p, 1.0) for p in MAIN_ROUTES.values()])
 
     # bow-tie key pockets along every internal seam: (x, y, angle)
     keys = []
@@ -287,8 +393,10 @@ def build_main():
                 solid = solid + Manifold.batch_boolean(adds, m3.OpType.Add)
             if cuts:
                 solid = solid - Manifold.batch_boolean(cuts, m3.OpType.Add)
+            carved, inlays = carve_routes(solid, route_geo, ox, oy)
+            ams_parts(f"main_{name}", solid, fused, sea_z=sea_z, inlays=inlays)
+            solid = carved
             tiles.append((name, solid))
-            ams_parts(f"main_{name}", solid, fused, sea_z=sea_z)
             if pegs:
                 solid = solid + Manifold.batch_boolean(pegs, m3.OpType.Add)
             save_stl(solid, f"main_{name}.stl")
@@ -301,6 +409,10 @@ def _clear_spot(x, y, pts, r=9.0):
     W, H = MAIN_COLS * TILE, MAIN_ROWS * TILE
     if not (12 < x < W - 12 and 8 < y < H - 8):
         return False
+    if ROUTE_PTS is not None:
+        d = ROUTE_PTS - (x, y)
+        if np.any((np.abs(d[:, 0]) < 11.5) & (d[:, 1] > -4.0) & (d[:, 1] < 5.5)):
+            return False
     return all(math.hypot(x - px, y - py) > r for px, py in pts)
 
 
@@ -388,6 +500,102 @@ def key_shape(clear):
 
 
 # ------------------------------------------------------------------ insets
+def trace_inset_routes(cfg, elev, step, mm, e0, n0, pts):
+    """Close-up routes; returns {colour: outline}, the polylines and the edge labels."""
+    ny, nx = elev.shape
+    blocked = np.zeros(elev.shape, bool)
+    blocked[:int((INSET_STRIP + 1.5) / step), :] = True
+    lo, hi = (0.4, INSET_STRIP + 1.6), (TILE - 0.4, TILE - 0.4)
+
+    def inside(x, y):
+        return lo[0] + 1 < x < hi[0] - 1 and lo[1] + 1 < y < hi[1] - 1
+
+    def to_border(x, y):
+        d = [x - lo[0], hi[0] - x, y - lo[1], hi[1] - y]
+        k = int(np.argmin(d))
+        return [(lo[0], y), (hi[0], y), (x, lo[1]), (x, hi[1])][k]
+
+    lines, labels = [], []
+    info = {r[0]: (r[1], r[3]) for r in ROUTES}
+    for key, colour, st, label, own in sorted(cfg["routes"], key=lambda r: r[1] == "white"):
+        wp = [None if x in ("->", "<-") else mm(*STATIONS[x]) for x in st]
+        edge = None
+        if key is not None:
+            main = MAIN_ROUTES[key] * MAIN_KM_PER_MM + (MAIN_E0, MAIN_N0)          # UTM km
+            line = (main - (e0, n0)) / INSET_KM_PER_MM + (0, INSET_STRIP)
+            if st[-1] == "->":
+                wp[-1] = tuple(rt.exit_point(line, wp[-2], True, inside))
+                edge = "end"
+            elif st[0] == "<-":
+                wp[0] = tuple(rt.exit_point(line, wp[1], False, inside))
+                edge = "start"
+        others = [p for p in pts if min(math.hypot(p[0] - w[0], p[1] - w[1]) for w in wp) > 1.0]
+        extra = rt.keep_away(elev.shape, step, lines=[q for c, q in lines] if colour == "white" else (),
+                             line_d=3.0, points=others, point_d=7.0, free=[wp[0], wp[-1]], free_r=5.0)
+        # gentler slope penalty up close: footpaths climb, caravans go round
+        p = rt.trace(elev, step, 1 / INSET_KM_PER_MM, blocked, wp, extra, slope=(10.0, 60.0))
+        p = rt.smooth(p, 1.5, keep=wp[1:-1])
+        if edge == "end":
+            p = np.vstack([p, to_border(*p[-1])])
+        elif edge == "start":
+            p = np.vstack([to_border(*p[0]), p])
+        lines.append((colour, p))
+        name, date = own if own else info[key]
+        fmt = {k: f"{v:.0f}" for k, v in ROUTE_LEN.items()}
+        km = rt.length(p) * INSET_KM_PER_MM if key is None else (None if own else ROUTE_LEN[key])
+        utm = (p - (0, INSET_STRIP)) * INSET_KM_PER_MM + (e0, n0)
+        ROUTE_EXPORT.setdefault(cfg["name"].lower(), []).append(dict(
+            key=key, name=name, date=date, colour=colour, stations=[x for x in st if x not in ("->", "<-")],
+            km=None if km is None else round(km, 1), label=label.format(**fmt) if label else None,
+            utm=np.round(rt.resample(utm, 0.05), 3).tolist()))
+        if label:
+            end = p[-1] if edge == "end" else p[0]
+            inward = p[-12] if edge == "end" else p[11]
+            labels.append((label.format(**{k: f"{v:.0f}" for k, v in ROUTE_LEN.items()}), end, inward))
+    clear = [(x, y, 4.6) for x, y in pts[:len(cfg["sites"])]]
+    geo = route_shapes(lines, ROUTE_W_INSET, DASH_INSET, clear)
+    return geo, lines, labels
+
+
+def place_edge_labels(labels, lines, pts, size=4.2):
+    """Put each route's distance label just inside the tile, beside where it leaves."""
+    dense = np.vstack([rt.resample(q, 0.5) for _, q in lines])
+    out, taken = [], []
+    for text, end, inward in labels:
+        rows = text.split(", ")
+        css = [text_cs(r, size, 0, 0) for r in rows]
+        w = max(c.bounds()[2] - c.bounds()[0] for c in css)
+        hgt = size * 1.45 * len(rows)
+        d = np.asarray(inward) - end
+        d = d / (np.linalg.norm(d) or 1)
+        n = np.array([-d[1], d[0]])
+        best = None
+        for along in (3, 6, 10, 15, 22, 30):
+            for side in (1, -1):
+                c = (end + d * (along + abs(d[0]) * w / 2 + abs(d[1]) * hgt / 2)
+                     + n * side * (abs(n[0]) * w / 2 + abs(n[1]) * hgt / 2 + 3.0))
+                x0, y0 = c[0] - w / 2, c[1] - hgt / 2
+                box = (x0 - 1.5, y0 - 1.5, x0 + w + 1.5, y0 + hgt + 1.5)
+                if not (2 < box[0] and box[2] < TILE - 2 and INSET_STRIP + 2 < box[1] and box[3] < TILE - 2):
+                    continue
+                hit = ((dense[:, 0] > box[0]) & (dense[:, 0] < box[2]) & (dense[:, 1] > box[1]) & (dense[:, 1] < box[3])).any()
+                hit |= any(box[0] - 5 < px < box[2] + 5 and box[1] - 5 < py < box[3] + 5 for px, py in pts)
+                hit |= any(not (box[2] < b[0] or box[0] > b[2] or box[3] < b[1] or box[1] > b[3]) for b in taken)
+                if not hit:
+                    best = (x0, y0, box)
+                    break
+            if best:
+                break
+        if best is None:
+            print(f"  warning: no room for label '{text}'")
+            continue
+        x0, y0, box = best
+        taken.append(box)
+        for k, r in enumerate(rows):
+            out.append(text_cs(r, size, x0, y0 + hgt - (k + 1) * size * 1.45 + 0.3))
+    return out
+
+
 def build_inset(cfg):
     name = cfg["name"]
     print(f"{name} inset: downloading / sampling terrain ...")
@@ -423,7 +631,8 @@ def build_inset(cfg):
     adds, cuts, pegs, fused, trench = [], [], [], [], []
     for (px, py), z, s in zip(pts, pads, cfg["sites"]):
         pegs.append(peg(px, py, z))
-        fused.append((KIND_COLOUR[s[3]], marker(s[3], 6.5, socket=False).translate((px, py, z))))
+        colour = cfg.get("ams_override", {}).get(s[0], KIND_COLOUR[s[3]])
+        fused.append((colour, marker(s[3], 6.5, socket=False).translate((px, py, z))))
 
     if cfg["trench"]:
         tp = [mm(la, lo) for la, lo in cfg["trench"]]
@@ -474,13 +683,24 @@ def build_inset(cfg):
     solid = heightfield_solid(h, step)
     solid = solid + Manifold.batch_boolean(adds, m3.OpType.Add)
     solid = solid - Manifold.batch_boolean(cuts, m3.OpType.Add)
-    # multicolour (AMS) version: trench filled red, Hira summit white, markers fused on
+    # the Prophet's routes, with their distances raised beside the tile edge
+    route_geo, route_lines, route_labels = trace_inset_routes(cfg, elev, step, mm, e0, n0, pts)
+    labs = place_edge_labels(route_labels, route_lines, pts)
+    if labs:
+        prism = Manifold.batch_boolean([c.extrude(200).translate((0, 0, 0.5)) for c in labs], m3.OpType.Add)
+        solid = solid + (prism ^ solid.translate((0, 0, EMBOSS)))
+    # multicolour (AMS) version: trench and routes filled, Hira summit white, markers fused on
     ams_solid, extra = solid, []
     if trench:
         tr = Manifold.batch_boolean(trench, m3.OpType.Add)
         extra.append(("red", ams_solid ^ tr))
         ams_solid = ams_solid - tr
         solid = solid - tr
+    carved, inlays = carve_routes(solid, route_geo)
+    for colour, m in inlays:
+        extra.append((colour, m))
+        ams_solid = ams_solid - m
+    solid = carved
     if cfg["light_peak"]:
         sx, sy, cut_z, cap_r, sz = cap_info
         body = cyl(cap_r, cut_z, sz + 5, sx, sy, 48)
@@ -499,7 +719,7 @@ def build_inset(cfg):
     save_stl(solid, f"inset_{name.lower()}.stl")
     np.save(os.path.join(CACHE, f"inset_{name.lower()}_h.npy"), h)
     print(f"  datum {datum:.0f} m (ground at that height = {BASE+0.6:.1f} mm)")
-    return h, step, pts, cap, datum
+    return h, step, pts, cap, datum, route_lines
 
 
 # ------------------------------------------------------- multicolour (AMS)
@@ -513,8 +733,9 @@ OUT_AMS = os.path.join(HERE, "..", "ams")
 AMS_TABLE = []
 
 
-def ams_parts(name, solid, fused, sea_z=None):
-    """Split a tile into colour parts and write <name>.3mf plus one STL per colour."""
+def ams_parts(name, solid, fused, sea_z=None, inlays=()):
+    """Split a tile into colour parts and write <name>.3mf plus one STL per colour.
+    fused: (colour, solid) sitting on top of the tile; inlays: (colour, solid) inside it."""
     parts = {}
     land = solid
     if sea_z is not None:
@@ -523,6 +744,11 @@ def ams_parts(name, solid, fused, sea_z=None):
         if sea.volume() > 1:
             parts["blue"] = sea
             land = land - sea
+    for colour, m in inlays:
+        if "blue" in parts:
+            m = m - parts["blue"]
+        parts[colour] = parts[colour] + m if colour in parts else m
+        land = land - m
     for colour, m in fused:
         m = m - land                       # never overlap the brown body
         parts[colour] = parts[colour] + m if colour in parts else m
@@ -645,8 +871,19 @@ LEGEND = [
 ]
 
 
+def route_legend():
+    L = {k: f"{v:.0f}" for k, v in ROUTE_LEN.items()}
+    return [
+        ("RED line", f"Medina to Badr {L['badr']} km, to Khaybar {L['khaybar']} km"),
+        ("", f"to Hudaybiyyah {L['hudaybiyyah']} km, to Mecca {L['mecca']} km"),
+        ("", f"Mecca to Hunayn and Ta'if {L['hunayn']} km"),
+        ("WHITE dash", f"The Hijra, Mecca to Medina {L['hijra']} km"),
+        ("", "Routes follow the valleys; stations approx."),
+    ]
+
+
 def build_legend():
-    W, Hh, T = 200.0, 150.0, 2.4
+    W, Hh, T = 200.0, 195.0, 2.4
     plate = Manifold.cube((W, Hh, T))
     adds = []
     z = T - 0.01
@@ -657,7 +894,7 @@ def build_legend():
     put(text_cs("THE HIJAZ IN THE TIME OF THE PROPHET", 7.2, W / 2, Hh - 14, "center"))
     put(text_cs("peace be upon him  -  c. 570 - 632 CE", 4.6, W / 2, Hh - 22, "center", bold=False))
     y = Hh - 34
-    for sym, txt in LEGEND:
+    for sym, txt in LEGEND + route_legend():
         if sym:
             put(text_cs(sym, 4.2, 8, y))
         put(text_cs(txt, 4.2, 48, y, bold=False))
@@ -686,16 +923,21 @@ def previews(main_h, main_pts, insets):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.colors import LightSource
+    import matplotlib.patheffects as pe
     os.makedirs(OUT_PNG, exist_ok=True)
     col = {"kaaba": "black", "mosque": "#1f8a3b", "light": "white", "battle": "#c62828", "site": "#d4a017"}
 
-    def draw(ax, h, step, pts, sites, title):
+    def draw(ax, h, step, pts, sites, title, lines=()):
         ls = LightSource(azdeg=315, altdeg=40)
         rgb = ls.shade(h, cmap=plt.get_cmap("copper"), vert_exag=3 / step, blend_mode="soft")
         ext = (0, (h.shape[1] - 1) * step, 0, (h.shape[0] - 1) * step)
         sea = h < BASE - SEA_DROP + 0.01
         rgb[sea, :3] = (0.35, 0.55, 0.75)
         ax.imshow(rgb, origin="lower", extent=ext)
+        rc = {"red": "#c62828", "white": "white", "gold": "#e0b020"}
+        for colour, p in lines:
+            ax.plot(p[:, 0], p[:, 1], color=rc[colour], lw=1.6, ls=(0, (3, 1.5)) if colour == "white" else "-",
+                    path_effects=[pe.withStroke(linewidth=2.6, foreground="#3b2a1a")])
         for (px, py), s in zip(pts, sites):
             ax.plot(px, py, "o", ms=7, mfc=col[s[3]], mec="k" if s[3] != "kaaba" else "w")
             off = {"Mecca (Kaaba)": (8, -12), "Jabal al-Nour (Hira)": (-118, 12), "Hudaybiyyah": (-62, -12),
@@ -706,7 +948,9 @@ def previews(main_h, main_pts, insets):
         ax.set_xlabel("mm")
 
     fig, ax = plt.subplots(figsize=(8, 11))
-    draw(ax, main_h, MAIN_STEP, main_pts, MAIN_SITES, "Main map, 400 x 600 mm, 1 cm = 10 km")
+    rcol = {r[0]: r[2] for r in ROUTES}
+    draw(ax, main_h, MAIN_STEP, main_pts, MAIN_SITES, "Main map, 400 x 600 mm, 1 cm = 10 km",
+         [(rcol[k], p) for k, p in MAIN_ROUTES.items()])
     for c in range(1, MAIN_COLS):
         ax.axvline(c * TILE, color="k", lw=.8, ls="--")
     for r in range(1, MAIN_ROWS):
@@ -717,12 +961,12 @@ def previews(main_h, main_pts, insets):
     fig.tight_layout()
     fig.savefig(os.path.join(OUT_PNG, "main_map.png"), dpi=110)
     plt.close(fig)
-    for cfg, (h, step, pts, _cap, _d) in insets:
+    for cfg, (h, step, pts, _cap, _d, lines) in insets:
         sites = list(cfg["sites"])
         if cfg["light_peak"]:
             sites.append((cfg["light_peak"][0], 0, 0, "light", "", False))
         fig, ax = plt.subplots(figsize=(8, 8))
-        draw(ax, h, step, pts, sites, f"{cfg['name']} inset, 200 x 200 mm, 1 cm = 1 km")
+        draw(ax, h, step, pts, sites, f"{cfg['name']} inset, 200 x 200 mm, 1 cm = 1 km", lines)
         fig.tight_layout()
         fig.savefig(os.path.join(OUT_PNG, f"inset_{cfg['name'].lower()}.png"), dpi=110)
         plt.close(fig)
@@ -743,4 +987,7 @@ if __name__ == "__main__":
     print(f"  {n} keys needed (+2 spares printed)")
     build_legend()
     previews(main_h, main_pts, insets)
+    import json
+    with open(os.path.join(CACHE, "routes.json"), "w") as f:
+        json.dump(ROUTE_EXPORT, f)
     print("done")
