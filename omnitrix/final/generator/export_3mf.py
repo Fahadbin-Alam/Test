@@ -42,6 +42,7 @@ def plate():
         ("Face (Black)", [("face", b.face(), "Black")], (195, 150)),
         ("Hourglass (Green)", [("hourglass", b.hourglass_insert(), "Green")], (200, 205)),
         ("Light bars x4 (Green)", [("bar%d" % i, m, "Green") for i, m in enumerate(bars)], (40, 225)),
+        ("Side button (Green)", [("side_button", b.side_button(), "Green")], (235, 235)),
         ("Pins x2 (Black)", [("pin1", b.pin(), "Black"), ("pin2", b.pin().translate([6, 0, 0]), "Black")], (160, 235)),
     ]
 

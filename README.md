@@ -14,6 +14,7 @@ Every project gets its own folder, and every project folder looks the same:
   old-versions/    earlier versions, kept for reference
     v1-<what-it-was>/
   <variant>/       one folder per alternative version (a colour, a size, a style)
+  <extra-piece>/   a separate model that belongs to the project (e.g. a close-up)
 ```
 
 Rules:
@@ -29,14 +30,16 @@ Rules:
    `us10-5`). A variant folder holds only the files that differ from `final/`.
 4. Folder names are lower case with dashes, so they work the same on Windows
    and on GitHub.
-5. Empty folders keep a `.gitkeep` file so they show up on GitHub.
+5. **An extra piece** (a separate model that goes with the project, like the
+   Haram model next to the map) gets its own named folder too.
+6. Empty folders keep a `.gitkeep` file so they show up on GitHub.
 
 ## Projects
 
 | Folder | What it is | Variants | Old versions |
 |---|---|---|---|
-| [`hijaz-islamic-history-map/`](hijaz-islamic-history-map/) | Tiled relief map of the Hijaz in the time of the Prophet ﷺ | `single-colour-with-pegs` | `v1-no-distance-rings` |
-| [`omnitrix/`](omnitrix/) | Omnitrix-style wrist prop | none yet | `v1-original-style` |
+| [`hijaz-islamic-history-map/`](hijaz-islamic-history-map/) | Tiled relief map of the Hijaz in the time of the Prophet ﷺ | `single-colour-with-pegs`, extra piece `haram-clock-tower-model` | `v1-no-distance-rings` |
+| [`omnitrix/`](omnitrix/) | Omnitrix-style wrist prop (15 cm wrist) | none yet | `v1-original-style`, `v2-chunky-17cm-wrist` |
 | [`green-lantern-ring/`](green-lantern-ring/) | Lantern power ring, US 10 | `single-colour` | none yet |
 | [`phone-valet-tray/`](phone-valet-tray/) | Nightstand valet tray with phone dock | none yet | none yet |
 | [`printer-and-pc-upgrades/`](printer-and-pc-upgrades/) | Upgrades for the printer and PC | none yet | none yet |
