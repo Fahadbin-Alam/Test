@@ -560,13 +560,16 @@ def write_3mf(path, name, parts):
         cfg.append(f'<part id="{i}" subtype="normal_part"><metadata key="name" value="{colour}"/>'
                    f'<metadata key="extruder" value="{i}"/></part>')
     top = len(parts) + 1
+    bbs = [m.bounding_box() for _, m in parts]
+    cx = (min(b[0] for b in bbs) + max(b[3] for b in bbs)) / 2
+    cy = (min(b[1] for b in bbs) + max(b[4] for b in bbs)) / 2
     model = ('<?xml version="1.0" encoding="UTF-8"?>\n'
              '<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">'
              '<metadata name="Application">BambuStudio-01.10.00.00</metadata>'
              '<metadata name="BambuStudio:3mfVersion">1</metadata>'
              f'<metadata name="Title">{name}</metadata><resources>' + "".join(objs) +
              f'<object id="{top}" type="model"><components>' + "".join(comps) + '</components></object>'
-             f'</resources><build><item objectid="{top}" transform="1 0 0 0 1 0 0 0 1 28 28 0" printable="1"/></build></model>')
+             f'</resources><build><item objectid="{top}" transform="1 0 0 0 1 0 0 0 1 {128 - cx:.3f} {128 - cy:.3f} 0" printable="1"/></build></model>')
     settings = ('<?xml version="1.0" encoding="UTF-8"?>\n<config>'
                 f'<object id="{top}"><metadata key="name" value="{name}"/><metadata key="extruder" value="1"/>'
                 + "".join(cfg) + '</object></config>')

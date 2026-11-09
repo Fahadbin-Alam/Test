@@ -131,6 +131,48 @@ of Hunayn (its exact battlefield is debated) and the line of the Trench (drawn
 across the open north side of Medina between the two lava fields, near Jabal
 Sal'). Tabuk and Mu'tah are too far north to fit on this map.
 
+## Masjid al-Haram and the Makkah Clock Tower (architectural model)
+
+![Haram model](preview/haram-model-overview.png)
+
+| Clock Tower | Mataf and the Kaaba |
+|---|---|
+| ![Tower](preview/haram-model-clock-tower.png) | ![Mataf](preview/haram-model-mataf-kaaba.png) |
+
+A detailed city model of the area around the Kaaba: one 240 × 240 mm tile at
+**1:4,000 (1 cm = 40 m)** with **true heights, no exaggeration**, so the Clock
+Tower stands 150 mm tall (601 m) and the minarets about 34 mm.
+
+* Every building is extruded from its real footprint and height, including the
+  stepped shape of the Clock Tower, its clock section and spire, the Abraj
+  al-Bait towers, the Haram with its minarets, the mataf ring, the Kaaba, the
+  Maqam Ibrahim and the Hijr Ismail wall.
+* The ground follows the real terrain of the valley, and streets are engraved
+  into it.
+* A raised title and a 200 m scale bar sit on the strip along the south edge;
+  the bottom is engraved with the name and scale.
+
+Files:
+
+* `ams/haram_model.3mf`: colour version for the AMS. Slot 1 **light grey**
+  (ground), 2 **white** (buildings and the marble floor of the mataf),
+  3 **black** (the Kaaba), 4 **gold** (the crescent on the Clock Tower and the
+  minaret tips). Per-colour STLs are in `ams/stl/haram_model/` as a fallback.
+* `stl/haram_model.stl`: the same model in one piece for a single colour (white
+  or light grey PLA looks like the photo reference).
+
+Printing tips: 0.12–0.16 mm layers for the fine detail, 3 walls, 10% infill,
+turn on **tree supports (auto)** for the few bridges between buildings, and
+print the tall tower slowly (Bambu Studio "Silent" mode or 50% speed for the
+top 60 mm) so the thin spire stays crisp. Expect a long print (likely more than
+a day).
+
+The buildings come from Overture Maps, which includes OpenStreetMap data
+(© OpenStreetMap contributors, ODbL). `generator/fetch_haram_data.py`
+refreshes the saved data in `generator/data/`, and `generator/haram.py`
+rebuilds the model (change `SCALE`, `CENTER` or `W` to make it bigger,
+smaller, or centred somewhere else).
+
 ## Printing in colour on a Bambu P1S with AMS (recommended)
 
 The `ams/` folder has a multicolour version of every tile, so the colours
@@ -155,6 +197,7 @@ Each tile uses at most 4 colours, so it fits one AMS. Brown is always slot 1:
 | `main_B3.3mf` | brown | | | |
 | `inset_mecca.3mf` | brown | white | black | gold |
 | `inset_medina.3mf` | brown | red | green | gold |
+| `haram_model.3mf` | light grey | white | black | gold |
 
 A sensible AMS load is **brown, blue, white, black**, then swap blue for red,
 green or gold for the tiles that need them. On tile B1 the Hudaybiyyah marker
