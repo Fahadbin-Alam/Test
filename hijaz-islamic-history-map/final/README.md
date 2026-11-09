@@ -1,5 +1,7 @@
 # Map of the Hijaz in the time of the Prophet ﷺ
 
+> **Folder layout:** this `final/` folder is the multicolour version for the Bambu P1S + AMS (`ams/`), plus the keys and legend plaque in `stl/`. The single-colour tiles and peg-on markers are in [`../single-colour-with-pegs/`](../single-colour-with-pegs/). If you re-run the generator it writes every STL into `stl/` here; move the single-colour ones across afterwards.
+
 A 3D-printable relief map of western Saudi Arabia, from Ta'if and Mecca in the
 south to Khaybar in the north, built from real elevation data and printed in
 tiles that join into one map. It marks Mecca, Medina, Jabal al-Nour (Cave of
@@ -15,16 +17,16 @@ Hira), and the main battles and events of the Prophet's life.
 
 | Piece | Size | Count | Colour |
 |---|---|---|---|
-| Main map tiles `stl/main_A1 … main_B3.stl` | 200 × 200 mm each, 400 × 600 mm assembled | 6 | Brown |
-| Mecca inset `stl/inset_mecca.stl` | 200 × 200 mm | 1 | Brown |
-| Medina inset `stl/inset_medina.stl` | 200 × 200 mm | 1 | Brown |
+| Main map tiles `../single-colour-with-pegs/main_A1 … main_B3.stl` | 200 × 200 mm each, 400 × 600 mm assembled | 6 | Brown |
+| Mecca inset `../single-colour-with-pegs/inset_mecca.stl` | 200 × 200 mm | 1 | Brown |
+| Medina inset `../single-colour-with-pegs/inset_medina.stl` | 200 × 200 mm | 1 | Brown |
 | Legend plaque `stl/legend_plaque.stl` (title, key, scale bars) | 200 × 150 mm | 1 | Brown (or any) |
 | Joining keys `stl/joining_keys.stl` (bow-ties) | 30 × 14 mm | 14 + 2 spare | Brown |
-| Kaaba markers `stl/markers_black_kaaba.stl` | cube | 2 + 1 spare | **Black** |
-| Hira markers `stl/markers_white_light.stl` (peak cone for the main map + the summit cap for the Mecca inset) | | 1 + cap + 1 spare | **White** |
-| Prophet's Mosque markers `stl/markers_green_mosque.stl` | dome | 2 + 1 spare | **Green** |
-| Battle markers `stl/markers_red_battle.stl` | spire | 6 + 1 spare | **Red** |
-| Other events `stl/markers_gold_site.stl` | hexagon | 7 + 1 spare | **Gold / yellow** |
+| Kaaba markers `../single-colour-with-pegs/markers_black_kaaba.stl` | cube | 2 + 1 spare | **Black** |
+| Hira markers `../single-colour-with-pegs/markers_white_light.stl` (peak cone for the main map + the summit cap for the Mecca inset) | | 1 + cap + 1 spare | **White** |
+| Prophet's Mosque markers `../single-colour-with-pegs/markers_green_mosque.stl` | dome | 2 + 1 spare | **Green** |
+| Battle markers `../single-colour-with-pegs/markers_red_battle.stl` | spire | 6 + 1 spare | **Red** |
+| Other events `../single-colour-with-pegs/markers_gold_site.stl` | hexagon | 7 + 1 spare | **Gold / yellow** |
 
 Tile names: columns **A** (west, Red Sea side) and **B** (east); rows **1**
 (south, Mecca) to **3** (north, Khaybar). Each tile's name is engraved on its
@@ -177,7 +179,7 @@ settings in a 3MF), use the STL parts instead: select **all** the files in
 file name is its filament slot, and the colour is in the name.
 
 The keys, the legend plaque and the joining instructions are the same as the
-single-colour version below. The peg markers in `stl/` are only needed for a
+single-colour version below. The peg markers in `../single-colour-with-pegs/` are only needed for a
 single-colour printer.
 
 ## Printing
