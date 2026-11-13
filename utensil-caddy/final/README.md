@@ -22,7 +22,8 @@ Cutlery (18-23 cm long) sticks out about half its length so it's easy to grab; c
 ## Print settings (Bambu P1S)
 - PLA or PETG (PETG if it'll get wet often). 0.2 mm layers, 4 walls (the walls are 1.6 mm, so they print as solid perimeters), 15% infill (only the floor uses it).
 - Print upright, as it opens. No supports, no brim needed.
-- About 440 g PLA. Expect roughly 8-10 h single colour; the icons add colour swaps only on those layers.
+- Sliced in Bambu Studio (P1S, Bambu PLA Basic): single colour about 9 h 30 min and 405 g.
+- Two colours (white body, black icons): about 23.6 h and 593 g, with about 525 filament swaps, because the icons run up most of the wall height. Print the single-colour version unless you really want the icons.
 - Optional: 4 x 10 mm stick-on rubber bumper feet go in the recesses under the base.
 
 ## Resize
